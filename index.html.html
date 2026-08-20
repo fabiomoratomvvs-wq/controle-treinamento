@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Frequência e Treinamento</title>
+<style>
+:root{
+  --bg:#07111f; --panel:#0d1b2a; --panel2:#10243a; --line:#1e3a55;
+  --text:#e8f1f8; --muted:#91a7ba; --accent:#ffd000; --green:#20d98b;
+  --red:#ff5577; --yellow:#ffc857; --purple:#a978ff;
+}
+*{box-sizing:border-box}
+body{
+      margin:0;
+      background:
+        linear-gradient(rgba(3,7,12,.88),rgba(3,7,12,.94)),
+        url('a_wide_dashboard_table_user_interface_screenshot.png') center top/cover fixed no-repeat;
+      color:var(--text);
+      font-family:Segoe UI,Arial,sans-serif;
+    }
+.header{padding:28px 30px;border-bottom:1px solid var(--line);background:rgba(5,15,27,.92);position:sticky;top:0;z-index:10;backdrop-filter:blur(10px)}
+.header h1{margin:0;font-size:25px;letter-spacing:.5px}
+.header p{margin:7px 0 0;color:var(--muted)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+input,button,select{background:#0a1726;color:var(--text);border:1px solid #28445e;border-radius:8px;padding:10px 13px}
+input{min-width:280px;flex:1}
+button{cursor:pointer}button:hover{border-color:var(--accent);color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:12px;padding:18px 25px}
+.card{background:linear-gradient(145deg,#0d1c2d,#0a1726);border:1px solid var(--line);border-radius:12px;padding:15px}
+.card b{font-size:23px}.card span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.wrap{padding:0 25px 30px}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px;background:#081523;max-height:72vh}
+table{border-collapse:separate;border-spacing:0;min-width:2550px;width:max-content}
+th,td{border-right:1px solid #183149;border-bottom:1px solid #183149;padding:8px 10px;text-align:center;font-size:12px;white-space:nowrap}
+thead th{position:sticky;top:0;background:#10253a;z-index:4;color:#cfe5f5}
+th:nth-child(1),td:nth-child(1){position:sticky;left:0;z-index:5;background:#0d1d2d}
+th:nth-child(2),td:nth-child(2){position:sticky;left:92px;z-index:5;background:#0d1d2d;text-align:left;min-width:280px}
+thead th:nth-child(1),thead th:nth-child(2){z-index:7}
+.status{font-weight:700;border-radius:6px;padding:5px 7px;display:inline-block}
+.PRESENTE{color:#63f2b0;background:rgba(32,217,139,.10)}
+.FALTA,.AUSENTE{color:#ff6684;background:rgba(255,85,119,.10)}
+.DESISTENTE,.DESLIGADO{color:#ff6d87;background:rgba(255,85,119,.08)}
+.ATESTADO{color:#ffd36a;background:rgba(255,200,87,.1)}
+.SABADO,.DOMINGO,.SEGUNDA-FEIRA{color:#91a7ba}
+.ATRASADO{color:#ffc857;background:rgba(255,200,87,.1)}
+.PRAT,.CERT,.EQUIP,.INICIO,.REP,.NOVA,.HFC,.GPON{color:#a978ff;background:rgba(169,120,255,.10)}
+.description td{background:#0b1b2b;color:#7fdcff;font-weight:600}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin:15px 0;color:var(--muted);font-size:12px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+footer{padding:20px 25px;color:#637b90;font-size:12px}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.header{position:static}}
+
+.status.has-tooltip{position:relative;cursor:help}
+.status.has-tooltip::after{
+  content:attr(data-tooltip);
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 10px);
+  transform:translateX(-50%) translateY(5px);
+  width:max-content;
+  max-width:260px;
+  padding:9px 12px;
+  border:1px solid #2c6685;
+  border-radius:8px;
+  background:rgba(5,16,29,.97);
+  color:#e8f7ff;
+  font-size:11px;
+  font-weight:500;
+  line-height:1.35;
+  white-space:normal;
+  text-align:left;
+  box-shadow:0 8px 25px rgba(0,0,0,.45),0 0 14px rgba(0,212,255,.14);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease,visibility .18s ease;
+  z-index:100;
+}
+.status.has-tooltip::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 4px);
+  transform:translateX(-50%) translateY(5px);
+  border:5px solid transparent;
+  border-top-color:#2c6685;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .18s ease,transform .18s ease,visibility .18s ease;
+  z-index:101;
+}
+.status.has-tooltip:hover::after,
+.status.has-tooltip:hover::before{
+  opacity:1;
+  visibility:visible;
+  transform:translateX(-50%) translateY(0);
+}
+
+
+.header{
+  box-shadow:0 0 35px rgba(255,208,0,.10);
+  border-bottom:1px solid rgba(255,208,0,.45);
+}
+.header h1{
+  color:#ffd000;
+  text-shadow:0 0 14px rgba(255,208,0,.38);
+  letter-spacing:1px;
+}
+.header p{color:#c7d3dc;letter-spacing:2px}
+.stats .card{
+  border-color:rgba(255,208,0,.35);
+  box-shadow:inset 0 0 18px rgba(255,208,0,.035),0 0 14px rgba(255,208,0,.035);
+}
+.stats .card b{color:#ffd000;text-shadow:0 0 10px rgba(255,208,0,.25)}
+.toolbar input:focus,.toolbar button:hover{
+  outline:none;
+  border-color:#ffd000;
+  box-shadow:0 0 14px rgba(255,208,0,.18);
+}
+.table-wrap{
+  border-color:rgba(255,208,0,.4);
+  box-shadow:0 0 30px rgba(255,208,0,.07);
+}
+th,td{border-color:rgba(255,208,0,.15)}
+thead th{
+  background:linear-gradient(180deg,#201d0b,#11150f);
+  color:#ffd000;
+}
+th:nth-child(1),td:nth-child(1),th:nth-child(2),td:nth-child(2){
+  background:#0c0f0d;
+}
+.description td{
+  background:rgba(18,18,10,.96);
+  color:#ffd000;
+  border-color:rgba(255,208,0,.22);
+}
+
+
+.login-hover{
+  display:inline-block;
+  color:#ffd000;
+  font-weight:800;
+  cursor:help;
+  text-shadow:0 0 8px rgba(255,208,0,.18);
+  position:relative;
+}
+.login-hover::after{
+  content:attr(data-tooltip);
+  position:absolute;
+  left:0;
+  bottom:calc(100% + 10px);
+  width:245px;
+  padding:10px 12px;
+  border:1px solid rgba(255,208,0,.6);
+  border-radius:8px;
+  background:rgba(7,9,7,.98);
+  color:#f4f8fb;
+  font-size:11px;
+  font-weight:500;
+  line-height:1.4;
+  white-space:normal;
+  text-align:left;
+  box-shadow:0 8px 25px rgba(0,0,0,.55),0 0 18px rgba(255,208,0,.13);
+  opacity:0;
+  visibility:hidden;
+  transform:translateY(5px);
+  transition:.18s ease;
+  z-index:200;
+  pointer-events:none;
+}
+.login-hover:hover::after{
+  opacity:1;
+  visibility:visible;
+  transform:translateY(0);
+}
+
+</style>
+</head>
+<body>
+<header class="header">
+  <h1>FABIO MORATO - Multiplicador técnico empresa Office Telco</h1>
+  <p>CONTROLE DE TREINAMENTO TÉCNICO — ETN</p>
+  <div style="margin-top:8px;color:#8fa4b5;font-size:12px;letter-spacing:1.5px">
+    EAD • HFC • GPON • PRÁTICAS • CERTIFICAÇÃO • CAMPO
+  </div>
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Pesquisar por login ou nome...">
+    <button onclick="showAll()">Todos</button>
+    <button onclick="filterStatus('PRESENTE')">Presentes</button>
+    <button onclick="filterStatus('FALTA')">Faltas</button>
+    <button onclick="filterStatus('DESISTENTE')">Desistentes</button>
+    <button onclick="window.print()">🖨 Imprimir</button>
+  </div>
+</header>
+
+<section class="stats">
+  <div class="card"><b id="total">0</b><span>Colaboradores</span></div>
+  <div class="card"><b id="presentes">0</b><span>Ativos / em treinamento</span></div>
+  <div class="card"><b id="faltas">0</b><span>Registros de falta</span></div>
+  <div class="card"><b id="desistentes">0</b><span>Desistentes</span></div>
+  <div class="card"><b id="desligados">0</b><span>Desligados</span></div>
+</section>
+
+<div class="wrap">
+<div class="legend">
+  <span><i class="dot" style="background:#20d98b"></i>Presente</span>
+  <span><i class="dot" style="background:#ff5577"></i>Falta/Ausente</span>
+  <span><i class="dot" style="background:#ffc857"></i>Atrasado/Atestado</span>
+  <span><i class="dot" style="background:#a978ff"></i>Etapas de treinamento</span>
+</div>
+<div class="table-wrap">
+<table id="tbl">
+<thead id="thead"></thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+</div>
+<footer>Controle estruturado a partir da planilha fornecida. Use a pesquisa para localizar rapidamente um colaborador.</footer>
+
+<script>
+const headers = ["LOGIN","NOME","27/07/2026","28/07/2026","29/07/2026","30/07/2026","31/07/2026","01/08/2026","02/08/2026","03/08/2026","04/08/2026","05/08/2026","06/08/2026","07/08/2026","08/08/2026","09/08/2026","10/08/2026","11/08/2026","12/08/2026","13/08/2026","14/08/2026","15/08/2026","16/08/2026","17/08/2026","18/08/2026","19/08/2026","20/08/2026","21/08/2026","22/08/2026","23/08/2026","24/08/2026","25/08/2026","26/08/2026"];
+const desc=["DESCRIÇÃO","EAD","EAD","EAD","AULA 01 - HFC","AULA 02 - HFC","SAÍDA ACAMPO","FOLGA","AULA 03 - HFC","AULA 04 - HFC","AULA 05 - HFC","AULA 1 - GPON","AULA 2 - GPON","NRs 6,10 e 35","FOLGA","AULA 3 - GPON","PRATICAS","PRATICAS","PRATICAS","PRATICAS","SAÍDA A CAMPO","FOLGA","PRATICAS","PRATICAS","PRATICAS","HOMOLOGAÇÃO","ENTREGAS","SAÍDA A CAMPO","FOLGA","INICIO EM CAMP","REPESCAGEM","NOVA ETN"];
+const raw=[
+["Z654062","DIEGO CARDOSO DOS SANTOS",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","ATRASADO","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z682923","LUIZ PAULO GONCALVES DE REZENDE",["AUSENTE","DESISTENTE","DESISTENTE","DESISTENTE","DESISTENTE","SABADO","DOMINGO","DESISTENTE","DESISTENTE","DESISTENTE","DESISTENTE","DESISTENTE","SABADO","DOMINGO","DESISTENTE","DESISTENTE","DESISTENTE","DESISTENTE","DESISTENTE","SABADO","DOMINGO","DESISTENTE","DESISTENTE","DESISTENTE","DESISTENTE","DESISTENTE","SABADO","DOMINGO","DESISTENTE","DESISTENTE","DESISTENTE"]],
+["Z681236","ADALTON YAN GOMES SOARES",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CINTAGEM","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","HFC","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z684075","JOSE ROBERTO CARVALHO MANDARINO",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","ATESTADO","ATESTADO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z687826","GUSTAVO HENRIQUE DA SILVA",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","ATRASADO","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z688301","CARLOS HENRIQUE PEREIRA DA ROCHA",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","FALTA","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z687916","HEBERT HENRIQUE MARQUES LAZARO",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z685950","RAPHAEL PEIXOTO MARTINS ASSUNCAO",["PRESENTE","PRESENTE","ATESTADO","ATESTADO","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z688984","BRUNO AUGUSTO DIAS",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z689637","MATHEUS FILIPE ALVES DE OLIVEIRA",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z689992","EDEN AUGUSTO COSTA SILVA",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["Z690769","CARLOS ROBERTO DE LIMA JUNIOR",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","DOMINGO","FALTA","FALTA","PRESENTE","PRESENTE","FALTA","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","DESLIGADO","DESLIGADO","CERTIFICAÇÃO","DESLIGADO","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]],
+["","BRUNO SOUZA GUIMARÃES",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","","","PRESENTE","PRESENTE","PRESENTE","PRESENTE","FALTA","FALTOU","SEGUNDA-FEIRA","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","GPON","GPON","GPON","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","SABADO","DOMINGO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","NOVA ETN"]],
+["Z548787","PAULO ANTONIO MORAES DO NASCIMENTO",["PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRESENTE","PRESENTE","PRESENTE","PRESENTE","SABADO","DOMINGO","PRESENTE","PRAT. CERTIFICAÇÃO","PRAT. CERTIFICAÇÃO","CERTIFICAÇÃO","EQUIPAGEM","SABADO","DOMINGO","INICIO EM CAMP","REPESCAGEM","NOVA ETN"]]
+];
+
+const thead=document.getElementById("thead"), tbody=document.getElementById("tbody");
+thead.innerHTML="<tr>"+headers.map(h=>`<th>${h}</th>`).join("")+"</tr>";
+const tooltips={
+ "PRESENTE":"Colaborador presente no treinamento.",
+ "ATESTADO":"Ausência justificada mediante atestado.",
+ "ATRASADO":"Colaborador chegou após o horário previsto.",
+ "FALTA":"Colaborador ausente sem registro de presença.",
+ "FALTOU":"Colaborador ausente no treinamento.",
+ "AUSENTE":"Colaborador não compareceu ao treinamento.",
+ "DESISTENTE":"Colaborador desistiu do processo de treinamento."
+};
+function cls(v){return v.replaceAll(" ","_").replaceAll(".","").replaceAll("-","_").toUpperCase().split("_")[0]}
+function tooltip(v){
+ const key=v.trim().toUpperCase();
+ return tooltips[key]||"";
+}
+function loginHtml(login,name){
+ if(!login) return `<span style="color:#667b8b">—</span>`;
+ const safeLogin=login.replaceAll('"',"&quot;");
+ const safeName=name.replaceAll('"',"&quot;");
+ return `<span class="login-hover" data-tooltip="Código de identificação único do colaborador: ${safeLogin} — ${safeName}">${safeLogin}</span>`;
+}
+function statusHtml(v){
+ const tip=tooltip(v);
+ const safeTip=tip.replaceAll('"',"&quot;");
+ return `<span class="status ${cls(v)} ${tip?'has-tooltip':''}" ${tip?`data-tooltip="${safeTip}"`:''}>${v||"—"}</span>`;
+}
+function render(list=raw){
+ tbody.innerHTML="";
+ list.forEach(r=>{
+  const tr=document.createElement("tr");
+  tr.dataset.search=(r[0]+" "+r[1]).toLowerCase();
+  tr.innerHTML=`<td>${loginHtml(r[0],r[1])}</td><td>${r[1]}</td>`+
+    r[2].map(v=>`<td>${statusHtml(v)}</td>`).join("");
+  tbody.appendChild(tr);
+ });
+ const d=document.createElement("tr");d.className="description";
+ d.innerHTML=desc.map(x=>`<td>${x}</td>`).join("");
+ tbody.appendChild(d);
+ updateStats();
+}
+function updateStats(){
+ document.getElementById("total").textContent=raw.length;
+ document.getElementById("presentes").textContent=raw.filter(r=>r[2].some(x=>x==="PRESENTE")).length;
+ document.getElementById("faltas").textContent=raw.reduce((n,r)=>n+r[2].filter(x=>x==="FALTA"||x==="AUSENTE"||x==="FALTOU").length,0);
+ document.getElementById("desistentes").textContent=raw.filter(r=>r[2].includes("DESISTENTE")).length;
+ document.getElementById("desligados").textContent=raw.filter(r=>r[2].includes("DESLIGADO")).length;
+}
+function showAll(){render(raw)}
+function filterStatus(s){render(raw.filter(r=>r[2].includes(s)))}
+document.getElementById("search").addEventListener("input",e=>{
+ const q=e.target.value.toLowerCase().trim();
+ render(raw.filter(r=>(r[0]+" "+r[1]).toLowerCase().includes(q)));
+});
+render();
+</script>
+</body>
+</html>
